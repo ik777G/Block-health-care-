@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract PatientPrivacy {
+    // Event declarations
+    event AccessGranted(address indexed patient, address indexed provider, uint256 timestamp);
+    event AccessRevoked(address indexed patient, address indexed provider, uint256 timestamp);
+
+    // Struct to store access permissions
+    struct AccessPermission {
+        address provider;
+        bool hasAccess;
+    }
+
+    // Mapping to store patient's access permissions
+    mapping(address => mapping(address => AccessPermission)) private permissions;
+
+    // Modifier to check if the caller is the patient
+    modifier onlyPatient(address _patient) {
+        require(msg.sender == _patient, "Caller is not the patient");
+        _;
+    }
+
+    // Modifier to check if the provider has access
+    modifier hasAccess(address _patient, address _provider) {
+        require(permissions[_patient][_provider].hasAccess, "Provider does not have access");
+        _;
+    }
+
+    // Function to grant access to a healthcare provider
+    function grantAccess(address _provider) external {
+        permissions[msg.sender][_provider] = AccessPermission(_provider, true);
+        emit AccessGranted(msg.sender, _provider, block.timestamp);
+    }
+
+    // Function to revoke access from a healthcare provider
+    function revokeAccess(address _provider) external {
+        require(permissions[msg.sender][_provider].hasAccess, "Provider does not have access");
+        permissions[msg.sender][_provider].hasAccess = false;
+        emit AccessRevoked(msg.sender, _provider, block.timestamp);
+    }
+
+    // Function to check if a provider has access
+    function hasProviderAccess(address _patient, address _provider) external view returns (bool) {
+        return permissions[_patient][_provider].hasAccess;
+    }
+}
